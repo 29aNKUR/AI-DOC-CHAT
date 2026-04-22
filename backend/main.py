@@ -3,12 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
-from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_groq import ChatGroq
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 import os
 from dotenv import load_dotenv
+from langchain_community.embeddings import FastEmbedEmbeddings
 
 load_dotenv()
 
@@ -21,9 +21,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-embeddings = HuggingFaceEmbeddings(
-    model_name="all-MiniLM-L6-v2"
-)
+embeddings = FastEmbedEmbeddings()
 
 llm = ChatGroq(
     api_key=os.getenv("GROQ_API_KEY"),
