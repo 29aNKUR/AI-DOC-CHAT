@@ -56,15 +56,50 @@ export default function Home() {
           <h2 className="text-lg font-semibold mb-4">
             Step 1 — Upload your PDF
           </h2>
-          <input
-            type="file"
-            accept=".pdf"
-            onChange={(e) => {
-              console.log("File selected:", e.target.files);
-              setFile(e.target.files?.[0] || null);
-            }}
-            className="block w-full text-sm text-gray-400 mb-4"
-          />
+          <label
+            className="flex flex-col items-center justify-center w-full h-32 
+  border-2 border-dashed border-gray-600 hover:border-blue-500 
+  rounded-xl cursor-pointer bg-gray-800 hover:bg-gray-750 
+  transition-all duration-200 mb-4 group"
+          >
+            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+              <svg
+                className="w-8 h-8 mb-2 text-gray-400 group-hover:text-blue-400 transition-colors"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                />
+              </svg>
+              <p className="text-sm text-gray-400 group-hover:text-blue-400 transition-colors">
+                {file ? (
+                  <span className="text-green-400 font-medium">
+                    📄 {file.name}
+                  </span>
+                ) : (
+                  <span>
+                    <span className="font-semibold">Click to upload</span> or
+                    drag and drop
+                  </span>
+                )}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">PDF files only</p>
+            </div>
+            <input
+              type="file"
+              accept=".pdf"
+              className="hidden"
+              onChange={(e) => {
+                console.log("File selected:", e.target.files);
+                setFile(e.target.files?.[0] || null);
+              }}
+            />
+          </label>
           <button
             onClick={() => {
               console.log("Button clicked, file:", file);
