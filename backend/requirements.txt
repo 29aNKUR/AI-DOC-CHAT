@@ -8,6 +8,7 @@ langchain
 langchain-groq
 langchain-community
 langchain-chroma
+langchain-text-splitters
+langchain-core
 chromadb
 fastembed
-langchain-text-splitters
