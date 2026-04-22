@@ -45,21 +45,24 @@ async def ask_question(data: dict):
     if not context:
         return {"answer": "Please upload a PDF first"}
     
-    response = client.chat.completions.create(
-        model="llama3-8b-8192",
-        messages=[
-            {
-                "role": "system",
-                "content": f"You are a helpful assistant. Answer questions based on this document:\n\n{context[:4000]}"
-            },
-            {
-                "role": "user",
-                "content": question
-            }
-        ]
-    )
-    
-    return {"answer": response.choices[0].message.content}
+    try:
+        response = client.chat.completions.create(
+       model="llama-3.3-70b-versatile",
+            messages=[
+                {
+                    "role": "system",
+                    "content": f"You are a helpful assistant. Answer questions based on this document:\n\n{context[:4000]}"
+                },
+                {
+                    "role": "user",
+                    "content": question
+                }
+            ]
+        )
+        return {"answer": response.choices[0].message.content}
+    except Exception as e:
+        print("Error:", str(e))
+        return {"answer": f"Error: {str(e)}"}
 
 @app.get("/")
 def root():
