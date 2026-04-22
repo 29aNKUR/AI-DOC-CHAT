@@ -6,3 +6,4 @@ __pycache__/
 uploads/
 backend/uploads/
 chroma_db/
+frontend/.env.local
