@@ -18,7 +18,7 @@ export default function Home() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const res = await fetch("http://localhost:8000/upload", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/upload`, {
         method: "POST",
         body: formData,
       });
@@ -35,7 +35,7 @@ export default function Home() {
   const handleAsk = async () => {
     if (!question) return;
     setLoading(true);
-    const res = await fetch("http://localhost:8000/ask", {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ask`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ question }),
