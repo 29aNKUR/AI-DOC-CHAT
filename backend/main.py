@@ -24,19 +24,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize embeddings
 embeddings = FastEmbedEmbeddings()
 
-# Initialize LLM
 llm = ChatGroq(
     api_key=os.getenv("GROQ_API_KEY"),
     model_name="llama-3.3-70b-versatile"
 )
 
-# Global vector store
 vector_store = None
 
-# Prompt template
 prompt_template = PromptTemplate.from_template("""
 You are a helpful assistant that answers questions based on the provided document context.
 
@@ -63,11 +59,9 @@ async def upload_pdf(file: UploadFile = File(...)):
     with open(file_path, "wb") as f:
         f.write(contents)
 
-    # Load PDF
     loader = PyPDFLoader(file_path)
     documents = loader.load()
 
-    # Clean text
     for doc in documents:
         text = doc.page_content
         text = re.sub(r'(?<!\n)\n(?!\n)', ' ', text)
@@ -75,18 +69,15 @@ async def upload_pdf(file: UploadFile = File(...)):
         text = re.sub(r'\n{2,}', '\n', text)
         doc.page_content = text.strip()
 
-    # Split into chunks
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=1000,
         chunk_overlap=200
     )
     chunks = text_splitter.split_documents(documents)
 
-    # Clear old vector store
     if os.path.exists("chroma_db"):
         shutil.rmtree("chroma_db")
 
-    # Store in ChromaDB
     vector_store = Chroma.from_documents(
         documents=chunks,
         embedding=embeddings,
@@ -114,7 +105,6 @@ async def ask_question(data: dict):
 
     question = data.get("question")
 
-    # Build RAG chain using new LangChain syntax
     retriever = vector_store.as_retriever(search_kwargs={"k": 3})
 
     rag_chain = (
