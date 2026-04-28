@@ -12,6 +12,7 @@ import os
 import re
 import shutil
 from dotenv import load_dotenv
+import chromadb
 
 load_dotenv()
 
@@ -20,6 +21,7 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -81,7 +83,7 @@ async def upload_pdf(file: UploadFile = File(...)):
     vector_store = Chroma.from_documents(
         documents=chunks,
         embedding=embeddings,
-        persist_directory="chroma_db"
+        client=chromadb.EphemeralClient()
     )
 
     return {
@@ -97,9 +99,9 @@ async def ask_question(data: dict):
     if vector_store is None:
         if os.path.exists("chroma_db"):
             vector_store = Chroma(
-                persist_directory="chroma_db",
+                client=chromadb.EphemeralClient(),
                 embedding_function=embeddings
-            )
+)
         else:
             return {"answer": "Please upload a PDF first"}
 
