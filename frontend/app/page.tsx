@@ -9,11 +9,15 @@ export default function Home() {
   const [answer, setAnswer] = useState("");
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [askError, setAskError] = useState<string | null>(null);
 
   const handleUpload = async () => {
     if (!file) return;
-    console.log("Uploading file:", file.name);
     setUploading(true);
+    setUploadError(null);
+    setUploaded(false);
+
     try {
       const formData = new FormData();
       formData.append("file", file);
@@ -22,27 +26,71 @@ export default function Home() {
         method: "POST",
         body: formData,
       });
-      console.log("Response status:", res.status);
-      const data = await res.json();
-      console.log("Response data:", data);
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        throw new Error(
+          errorData?.detail || `Upload failed with status ${res.status}`,
+        );
+      }
+
+      await res.json();
       setUploaded(true);
     } catch (error) {
-      console.error("Upload error:", error);
+      if (error instanceof TypeError && error.message.includes("fetch")) {
+        setUploadError(
+          "Cannot connect to the server. Please check your connection and try again.",
+        );
+      } else if (error instanceof Error) {
+        setUploadError(error.message);
+      } else {
+        setUploadError("Something went wrong during upload. Please try again.");
+      }
     } finally {
       setUploading(false);
     }
   };
+
   const handleAsk = async () => {
     if (!question) return;
     setLoading(true);
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ask`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question }),
-    });
-    const data = await res.json();
-    setAnswer(data.answer);
-    setLoading(false);
+    setAskError(null);
+    setAnswer("");
+
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ask`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        throw new Error(
+          errorData?.detail || `Request failed with status ${res.status}`,
+        );
+      }
+
+      const data = await res.json();
+
+      if (!data.answer) {
+        throw new Error("No answer received from the server.");
+      }
+
+      setAnswer(data.answer);
+    } catch (error) {
+      if (error instanceof TypeError && error.message.includes("fetch")) {
+        setAskError(
+          "Cannot connect to the server. Please check your connection and try again.",
+        );
+      } else if (error instanceof Error) {
+        setAskError(error.message);
+      } else {
+        setAskError("Something went wrong. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -52,15 +100,16 @@ export default function Home() {
         <p className="text-gray-400 text-center mb-8">
           Upload a PDF and ask anything about it
         </p>
+
         <div className="bg-gray-900 rounded-xl p-6 mb-6">
           <h2 className="text-lg font-semibold mb-4">
             Step 1 — Upload your PDF
           </h2>
           <label
             className="flex flex-col items-center justify-center w-full h-32 
-  border-2 border-dashed border-gray-600 hover:border-blue-500 
-  rounded-xl cursor-pointer bg-gray-800 hover:bg-gray-750 
-  transition-all duration-200 mb-4 group"
+            border-2 border-dashed border-gray-600 hover:border-blue-500 
+            rounded-xl cursor-pointer bg-gray-800 hover:bg-gray-750 
+            transition-all duration-200 mb-4 group"
           >
             <div className="flex flex-col items-center justify-center pt-5 pb-6">
               <svg
@@ -95,38 +144,87 @@ export default function Home() {
               accept=".pdf"
               className="hidden"
               onChange={(e) => {
-                console.log("File selected:", e.target.files);
                 setFile(e.target.files?.[0] || null);
+                setUploaded(false);
+                setUploadError(null);
               }}
             />
           </label>
+
           <button
-            onClick={() => {
-              console.log("Button clicked, file:", file);
-              handleUpload();
-            }}
+            onClick={handleUpload}
             disabled={!file || uploading}
             className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 
-  disabled:cursor-not-allowed px-6 py-2 rounded-lg font-medium 
-  transition-colors"
+            disabled:cursor-not-allowed px-6 py-2 rounded-lg font-medium 
+            transition-colors"
           >
-            {uploading ? "Uploading..." : "Upload PDF"}
+            {uploading ? (
+              <span className="flex items-center gap-2">
+                <svg
+                  className="animate-spin h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v8H4z"
+                  />
+                </svg>
+                Uploading...
+              </span>
+            ) : (
+              "Upload PDF"
+            )}
           </button>
+
           {uploaded && (
-            <p className="text-green-400 mt-3">✅ PDF uploaded successfully!</p>
+            <p className="text-green-400 mt-3 flex items-center gap-2">
+              ✅ PDF uploaded successfully! You can now ask questions.
+            </p>
+          )}
+
+          {uploadError && (
+            <div className="mt-3 p-3 bg-red-900/40 border border-red-500/50 rounded-lg flex items-start gap-2">
+              <span className="text-red-400 mt-0.5">⚠️</span>
+              <p className="text-red-300 text-sm">{uploadError}</p>
+            </div>
           )}
         </div>
+
+        {/* Ask Section */}
         <div className="bg-gray-900 rounded-xl p-6 mb-6">
           <h2 className="text-lg font-semibold mb-4">
             Step 2 — Ask a question
           </h2>
+
+          {!uploaded && (
+            <p className="text-gray-500 text-sm mb-3 italic">
+              Upload a PDF first to enable this section.
+            </p>
+          )}
+
           <textarea
             value={question}
-            onChange={(e) => setQuestion(e.target.value)}
+            onChange={(e) => {
+              setQuestion(e.target.value);
+              setAskError(null);
+            }}
             placeholder="What is this document about?"
+            disabled={!uploaded}
             className="w-full bg-gray-800 text-white rounded-lg p-3 mb-4 
-            resize-none h-24 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            resize-none h-24 focus:outline-none focus:ring-2 focus:ring-blue-500
+            disabled:opacity-50 disabled:cursor-not-allowed"
           />
+
           <button
             onClick={handleAsk}
             disabled={!uploaded || !question || loading}
@@ -134,9 +232,42 @@ export default function Home() {
             disabled:cursor-not-allowed px-6 py-2 rounded-lg font-medium 
             transition-colors"
           >
-            {loading ? "Thinking..." : "Ask AI"}
+            {loading ? (
+              <span className="flex items-center gap-2">
+                <svg
+                  className="animate-spin h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v8H4z"
+                  />
+                </svg>
+                Thinking...
+              </span>
+            ) : (
+              "Ask AI"
+            )}
           </button>
+
+          {askError && (
+            <div className="mt-3 p-3 bg-red-900/40 border border-red-500/50 rounded-lg flex items-start gap-2">
+              <span className="text-red-400 mt-0.5">⚠️</span>
+              <p className="text-red-300 text-sm">{askError}</p>
+            </div>
+          )}
         </div>
+
         {answer && (
           <div className="bg-gray-900 rounded-xl p-6">
             <h2 className="text-lg font-semibold mb-3">Answer</h2>
